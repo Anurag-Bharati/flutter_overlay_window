@@ -347,7 +347,19 @@ public class OverlayService extends Service implements View.OnTouchListener {
                 .setContentIntent(pendingIntent)
                 .setVisibility(WindowSetup.notificationVisibility)
                 .build();
-        startForeground(OverlayConstants.NOTIFICATION_ID, notification);
+        // On Android 12+ (API 31) starting a foreground service from the background
+        // throws ForegroundServiceStartNotAllowedException unless an exemption applies
+        // (e.g. the SYSTEM_ALERT_WINDOW grant). The service is started via plain
+        // startService(), so there is no startForegroundService() deadline to honour and
+        // it is safe to keep running as a normal background service when promotion fails.
+        // Swallow the failure instead of crashing the host app; the overlay window itself
+        // only needs the SYSTEM_ALERT_WINDOW permission and is still attached in
+        // onStartCommand.
+        try {
+            startForeground(OverlayConstants.NOTIFICATION_ID, notification);
+        } catch (Exception e) {
+            Log.e("OverlayService", "startForeground not allowed (likely background start); continuing without foreground promotion", e);
+        }
         instance = this;
     }
 
