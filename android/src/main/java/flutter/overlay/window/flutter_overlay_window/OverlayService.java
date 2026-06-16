@@ -97,6 +97,13 @@ public class OverlayService extends Service implements View.OnTouchListener {
     @RequiresApi(api = Build.VERSION_CODES.JELLY_BEAN_MR1)
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
+        // The OS re-delivers a null Intent when it restarts a START_STICKY service
+        // after killing it (e.g. low memory or the app being swiped away). There are
+        // no extras to act on in that case, so bail out instead of dereferencing the
+        // null Intent below (was crashing at intent.getIntExtra with an NPE).
+        if (intent == null) {
+            return START_NOT_STICKY;
+        }
         mResources = getApplicationContext().getResources();
         int startX = intent.getIntExtra("startX", OverlayConstants.DEFAULT_XY);
         int startY = intent.getIntExtra("startY", OverlayConstants.DEFAULT_XY);
